@@ -1,6 +1,10 @@
 use crate::{problem, solution};
-use core::fmt::{Result, Write};
-use toy::{Fenwick, Group, Moniod, Reader, Semigroup};
+use alloc::vec::Vec;
+use core::{
+    fmt::{Result, Write},
+    iter,
+};
+use toy::{Difference, Fenwick, Group, Moniod, Reader, Semigroup};
 
 problem!(data_structure, associative_array);
 
@@ -79,6 +83,50 @@ pub fn point_add_range_sum_(mut rd: Reader, wt: &mut dyn Write) -> Result {
         #[inline]
         fn inverse(x: &Self::Item) -> Self::Item {
             -x
+        }
+    }
+    Ok(())
+}
+
+problem!(data_structure, static_range_sum);
+
+solution!(data_structure, static_range_sum, static_range_sum_);
+
+#[inline]
+pub fn static_range_sum_(mut rd: Reader, wt: &mut dyn Write) -> Result {
+    let n = rd.u26();
+    let q = rd.u26();
+    let mut sum = 0u64;
+    let vec: Vec<_> = iter::once(0)
+        .chain((0..n).map(|_| {
+            sum += rd.u32() as u64;
+            sum
+        }))
+        .collect();
+    for _ in 0..q {
+        let l = rd.u26() as usize;
+        let r = rd.u26() as usize;
+        let sum = vec.difference(G, l, r);
+        writeln!(wt, "{sum}")?;
+    }
+    struct G;
+    impl Semigroup for G {
+        type Item = u64;
+        #[inline]
+        fn operate(x: &Self::Item, y: &Self::Item) -> Self::Item {
+            x.wrapping_add(*y)
+        }
+    }
+    impl Moniod for G {
+        #[inline]
+        fn unit() -> Self::Item {
+            0
+        }
+    }
+    impl Group for G {
+        #[inline]
+        fn inverse(x: &Self::Item) -> Self::Item {
+            x.wrapping_neg()
         }
     }
     Ok(())

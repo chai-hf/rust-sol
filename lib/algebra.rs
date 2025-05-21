@@ -9,4 +9,7 @@ pub trait Moniod: Semigroup {
 
 pub trait Group: Moniod {
     fn inverse(x: &Self::Item) -> Self::Item;
+    fn sub(x: &Self::Item, y: &Self::Item) -> Self::Item {
+        Self::operate(x, &Self::inverse(y))
+    }
 }
