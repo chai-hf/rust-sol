@@ -5,23 +5,23 @@ macro_rules! problem {
         mod $problem {
             #[test]
             #[ignore]
-            fn gendata() {
-                util::gendata(stringify!($dir), stringify!($problem));
+            fn gen_testcases() {
+                util::gen_testcases(stringify!($dir), stringify!($problem));
             }
             #[test]
             #[ignore]
-            fn rmdata() {
-                util::rmdata(stringify!($dir), stringify!($problem));
+            fn rm_testcases() {
+                util::rm_testcases(stringify!($dir), stringify!($problem));
             }
             #[test]
             #[ignore]
-            fn gencode() {
-                util::gencode(stringify!($dir), stringify!($problem), stringify!($problem));
+            fn gen_scripts() {
+                util::gen_scripts(stringify!($dir), stringify!($problem), stringify!($problem));
             }
             #[test]
             #[ignore]
-            fn rmcode() {
-                util::rmcode(stringify!($problem));
+            fn rm_scripts() {
+                util::rm_scripts(stringify!($problem));
             }
             #[test]
             #[ignore]
@@ -39,8 +39,8 @@ macro_rules! solution {
         mod $solution {
             #[test]
             #[ignore]
-            fn gencode() {
-                util::gencode(
+            fn gen_scripts() {
+                util::gen_scripts(
                     stringify!($dir),
                     stringify!($problem),
                     stringify!($solution),
@@ -48,8 +48,8 @@ macro_rules! solution {
             }
             #[test]
             #[ignore]
-            fn rmcode() {
-                util::rmcode(stringify!($solution));
+            fn rm_scripts() {
+                util::rm_scripts(stringify!($solution));
             }
             #[test]
             #[ignore]

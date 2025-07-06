@@ -1,7 +1,5 @@
-#![feature(test)]
-extern crate test;
 use std::{
-    fmt::{Arguments, Result, Write},
+    fmt::{Result, Write},
     fs,
     io::{self, Read},
     process::Command,
@@ -9,20 +7,20 @@ use std::{
 use toy::Reader;
 
 #[inline(never)]
-pub fn gendata(dir: &str, problem: &str) {
+pub fn gen_testcases(dir: &str, problem: &str) {
     let status = Command::new("../problems/generate.py")
         .arg("-p")
         .arg(format!("{dir}/{problem}"))
         .output()
         .unwrap();
     if !status.status.success() {
-        eprintln!("{}", String::from_utf8_lossy(&status.stderr));
+        println!("{}", String::from_utf8_lossy(&status.stderr));
         panic!();
     }
 }
 
 #[inline(never)]
-pub fn rmdata(dir: &str, problem: &str) {
+pub fn rm_testcases(dir: &str, problem: &str) {
     let status = Command::new("../problems/generate.py")
         .arg("-p")
         .arg(format!("{dir}/{problem}"))
@@ -30,13 +28,13 @@ pub fn rmdata(dir: &str, problem: &str) {
         .output()
         .unwrap();
     if !status.status.success() {
-        eprintln!("{}", String::from_utf8_lossy(&status.stderr));
+        println!("{}", String::from_utf8_lossy(&status.stderr));
         panic!();
     }
 }
 
 #[inline(never)]
-pub fn gencode(dir: &str, problem: &str, solution: &str) {
+pub fn gen_scripts(dir: &str, problem: &str, solution: &str) {
     let input_dir = format!("../problems/{dir}/{problem}/in");
     let mut tests: Vec<String> = Vec::new();
     for entry in fs::read_dir(&input_dir).unwrap() {
@@ -69,28 +67,6 @@ fn _{test}() {{
     let path = format!("tests/{solution}.rs");
     fs::write(&path, contents).unwrap();
 
-    let mut contents = format!(
-        r#"#![feature(test)]
-extern crate test;
-use sol::{dir}::{solution} as testfn;
-const DIR: &str = "{dir}";
-const PROBLEM: &str = "{solution}";
-"#
-    );
-    for test in &tests {
-        contents.push_str(&format!(
-            r#"
-#[bench]
-fn _{test}(b: &mut test::Bencher) {{
-    util::bench(testfn, DIR, PROBLEM, "{test}", b);
-}}
-"#
-        ));
-    }
-    fs::create_dir_all("benches").unwrap();
-    let path = format!("benches/{solution}.rs");
-    fs::write(&path, contents).unwrap();
-
     let contents = format!(
         r#"fn main() {{
     util::main(sol::{dir}::{solution});
@@ -99,16 +75,6 @@ fn _{test}(b: &mut test::Bencher) {{
     );
     fs::create_dir_all("examples").unwrap();
     let path = format!("examples/{solution}.rs");
-    fs::write(&path, contents).unwrap();
-
-    let mut contents = format!("cargo b -r -q --example {solution}\n");
-    for test in &tests {
-        contents.push_str(&format!(
-            "time -f %MKB target/release/examples/{solution} \
-            {test} < problems/{dir}/{problem}/in/{test}.in\n"
-        ));
-    }
-    let path = format!("../bench_{solution}.sh");
     fs::write(&path, contents).unwrap();
 
     let mut contents = String::from(
@@ -277,16 +243,14 @@ rm problems/{dir}/{problem}/out/{test}.res
 }
 
 #[inline(never)]
-pub fn rmcode(solution: &str) {
+pub fn rm_scripts(solution: &str) {
     fs::remove_file(format!("tests/{solution}.rs")).unwrap();
-    fs::remove_file(format!("benches/{solution}.rs")).unwrap();
     fs::remove_file(format!("examples/{solution}.rs")).unwrap();
-    fs::remove_file(format!("../bench_{solution}.sh")).unwrap();
     fs::remove_file(format!("src/bin/{solution}.rs")).unwrap();
     fs::remove_file(format!("../judge_{solution}.sh")).unwrap();
-    fs::remove_file(format!("../check_{solution}.sh")).unwrap();
     fs::remove_file(format!("../bundle_{solution}.c")).unwrap();
     fs::remove_file(format!("../bundle_{solution}")).unwrap();
+    fs::remove_file(format!("../check_{solution}.sh")).unwrap();
 }
 
 #[inline(never)]
@@ -314,7 +278,7 @@ pub fn bundle(dir: &str, problem: &str, solution: &str) {
         .output()
         .unwrap();
     if !status.status.success() {
-        eprintln!("{}", String::from_utf8_lossy(&status.stderr));
+        println!("{}", String::from_utf8_lossy(&status.stderr));
         panic!();
     }
     let status = Command::new("objcopy")
@@ -326,12 +290,12 @@ pub fn bundle(dir: &str, problem: &str, solution: &str) {
         .output()
         .unwrap();
     if !status.status.success() {
-        eprintln!("{}", String::from_utf8_lossy(&status.stderr));
+        println!("{}", String::from_utf8_lossy(&status.stderr));
         panic!();
     }
 
     let mut binary = fs::read(format!("../target/{solution}")).unwrap();
-    while binary.len() % 8 != 0 {
+    while !binary.len().is_multiple_of(8) {
         binary.push(0);
     }
     let mut contents = String::from(
@@ -407,27 +371,13 @@ pub fn test(
         .output()
         .unwrap();
     if !status.status.success() {
-        eprintln!("stderr: {}", String::from_utf8_lossy(&status.stderr));
-        eprintln!("Input:  {input_path}");
-        eprintln!("Result: {result_path}");
-        eprintln!("Output: {output_path}");
+        println!("stderr: {}", String::from_utf8_lossy(&status.stderr));
+        println!("Input:  {input_path}");
+        println!("Result: {result_path}");
+        println!("Output: {output_path}");
         panic!();
     }
     fs::remove_file(&result_path).unwrap();
-}
-
-#[inline(never)]
-pub fn bench(
-    testfn: impl Fn(Reader, &mut dyn Write) -> Result,
-    dir: &str,
-    problem: &str,
-    test: &str,
-    b: &mut test::Bencher,
-) {
-    let input_path = format!("../problems/{dir}/{problem}/in/{test}.in");
-    let input_data = fs::read(&input_path).unwrap();
-    let rd = Reader::new(input_data.as_ptr());
-    b.iter(|| testfn(rd, test::black_box(&mut Sink)).unwrap());
 }
 
 #[inline]
@@ -435,48 +385,7 @@ pub fn main(testfn: impl Fn(Reader, &mut dyn Write) -> Result) {
     let mut input_data = Vec::new();
     io::stdin().read_to_end(&mut input_data).unwrap();
     let rd = Reader::new(input_data.as_ptr());
-    #[cfg(debug_assertions)]
-    {
-        let mut wt = String::new();
-        testfn(rd, &mut wt).unwrap();
-        eprintln!("{wt}");
-    }
-    #[cfg(not(debug_assertions))]
-    {
-        use std::{env, time::Instant};
-        let test = env::args().nth(1).unwrap_or("-".into());
-        let time = Instant::now();
-        testfn(rd, test::black_box(&mut Sink)).unwrap();
-        let d = time.elapsed();
-        let s = d.as_secs();
-        let ms = d.subsec_millis();
-        let us = d.subsec_micros() % 1000;
-        let ns = d.subsec_nanos() % 1000;
-        if s > 0 {
-            eprint!("{test:<35}{s}{ms:03}.{us:03} ms/iter ");
-        } else if ms > 0 {
-            eprint!("{test:<35} {ms:3}.{us:03} ms/iter ");
-        } else if us > 0 {
-            eprint!("{test:<35} {us:3}.{ns:03} us/iter ");
-        } else {
-            eprint!("{test:<35}     {ns:3} ns/iter ");
-        }
-    }
-}
-
-struct Sink;
-
-impl Write for Sink {
-    #[inline]
-    fn write_str(&mut self, _: &str) -> Result {
-        Ok(())
-    }
-    #[inline]
-    fn write_char(&mut self, _: char) -> Result {
-        Ok(())
-    }
-    #[inline]
-    fn write_fmt(&mut self, _: Arguments<'_>) -> Result {
-        Ok(())
-    }
+    let mut wt = String::new();
+    testfn(rd, &mut wt).unwrap();
+    println!("{wt}");
 }
