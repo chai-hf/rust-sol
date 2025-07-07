@@ -1,5 +1,5 @@
 [workspace]
-members = ["lib", "sol", "util"]
+members = ["sol", "toy", "util"]
 resolver = "3"
 
 [profile.release]

@@ -78,38 +78,31 @@ fn _{test}() {{
     fs::write(&path, contents).unwrap();
 
     let mut contents = String::from(
-        r#"#![cfg_attr(target_os = "none", no_std)]
-#![cfg_attr(target_os = "none", no_main)]
-#[cfg(target_os = "none")]
+        r#"#![no_std]
+#![no_main]
 extern crate alloc;
 
-#[cfg(target_os = "none")]
+use alloc::string::String;
 use core::{
     alloc::{GlobalAlloc, Layout},
-    fmt::{Result, Write},
     hint,
-    panic::PanicInfo,
 };
-#[cfg(target_os = "none")]
 use toy::Reader;
 
 #[panic_handler]
 #[cfg(target_os = "none")]
-fn panic(_: &PanicInfo) -> ! {
+fn panic(_: &core::panic::PanicInfo) -> ! {
     unsafe { hint::unreachable_unchecked() }
 }
 
 #[global_allocator]
-#[cfg(target_os = "none")]
 static GLOBAL: GlobalAllocImpl = GlobalAllocImpl;
 
-#[cfg(target_os = "none")]
 struct GlobalAllocImpl;
 
-#[cfg(target_os = "none")]
 unsafe impl GlobalAlloc for GlobalAllocImpl {
     #[inline]
-    unsafe fn alloc_zeroed(&self, layout: Layout) -> *mut u8 {
+    unsafe fn alloc(&self, layout: Layout) -> *mut u8 {
         let ret;
         unsafe {
             core::arch::asm!(
@@ -130,13 +123,7 @@ unsafe impl GlobalAlloc for GlobalAllocImpl {
     }
 
     #[inline]
-    unsafe fn alloc(&self, layout: Layout) -> *mut u8 {
-        unsafe { self.alloc_zeroed(layout) }
-    }
-
-    #[inline]
     unsafe fn dealloc(&self, ptr: *mut u8, layout: Layout) {
-        let _: usize;
         unsafe {
             core::arch::asm!(
                 "syscall",
@@ -149,33 +136,14 @@ unsafe impl GlobalAlloc for GlobalAllocImpl {
             );
         }
     }
-}
 
-#[cfg(target_os = "none")]
-struct Stdout;
-
-#[cfg(target_os = "none")]
-impl Write for Stdout {
     #[inline]
-    fn write_str(&mut self, s: &str) -> Result {
-        unsafe {
-            core::arch::asm!(
-                "syscall",
-                in("rax") 1,
-                in("rdi") 1,
-                in("rsi") s.as_ptr(),
-                in("rdx") s.len(),
-                lateout("rax") _,
-                out("rcx") _,
-                out("r11") _,
-            );
-        }
-        Ok(())
+    unsafe fn alloc_zeroed(&self, layout: Layout) -> *mut u8 {
+        unsafe { self.alloc(layout) }
     }
 }
 
 #[unsafe(no_mangle)]
-#[cfg(target_os = "none")]
 #[unsafe(link_section = ".text.entry")]
 fn _start() {
     let ptr;
@@ -184,7 +152,7 @@ fn _start() {
             "syscall",
             in("rax") 9,
             in("rdi") 0,
-            in("rsi") 1 << 30,
+            in("rsi") 0x40000000,
             in("rdx") 1,
             in("r10") 2,
             in("r8") 0,
@@ -195,7 +163,20 @@ fn _start() {
         );
     }
     let rd = Reader::new(ptr);
-    testfn(rd, &mut Stdout).unwrap();
+    let mut wt = String::with_capacity(0x40000000);
+    testfn(rd, &mut wt).unwrap();
+    unsafe {
+        core::arch::asm!(
+            "syscall",
+            in("rax") 1,
+            in("rdi") 1,
+            in("rsi") wt.as_ptr(),
+            in("rdx") wt.len(),
+            lateout("rax") _,
+            out("rcx") _,
+            out("r11") _,
+        );
+    }
     unsafe {
         core::arch::asm!(
             "syscall",
@@ -205,14 +186,10 @@ fn _start() {
     }
     unsafe { hint::unreachable_unchecked() };
 }
-
-#[cfg(not(target_os = "none"))]
-fn main() {}
 "#,
     );
     contents.push_str(&format!(
         r#"
-#[cfg(target_os = "none")]
 use sol::{dir}::{solution} as testfn;
 "#
     ));

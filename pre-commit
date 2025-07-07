@@ -1,0 +1,9 @@
+#!/bin/sh
+set -e
+cargo fmt --check
+cargo check --target x86_64-unknown-none -p sol
+cargo check --target x86_64-unknown-none -p toy
+cargo check -p util
+cargo clippy --target x86_64-unknown-none -p sol
+cargo clippy --target x86_64-unknown-none -p toy
+cargo clippy -p util
