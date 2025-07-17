@@ -9,4 +9,4 @@ description = "util"
 path = "lib.rs"
 
 [dependencies]
-toy.path = "../lib"
+toy.path = "../toy"

@@ -1,15 +1,13 @@
 [package]
-name = "sol"
+name = "bin"
 version = "0.0.0"
 edition = "2024"
 license = "MIT OR Apache-2.0"
-description = "sol"
+description = "bin"
 
 [lib]
 path = "lib.rs"
 
 [dependencies]
+sol.path = "../sol"
 toy.path = "../toy"
-
-[dev-dependencies]
-util.path = "../util"

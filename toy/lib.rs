@@ -6,9 +6,11 @@ mod heap;
 mod mint;
 mod reader;
 mod turbo;
+mod writer;
 
 pub use fenwick::*;
 pub use heap::*;
 pub use mint::*;
 pub use reader::*;
 pub use turbo::*;
+pub use writer::*;
