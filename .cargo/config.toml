@@ -1,0 +1,9 @@
+[build]
+rustflags = ["-Ctarget-cpu=native"]
+
+[target.x86_64-unknown-none]
+rustflags = [
+    "-Ctarget-cpu=native",
+    "-Crelocation-model=static",
+    "-Clink-arg=-Tlinker.ld",
+]

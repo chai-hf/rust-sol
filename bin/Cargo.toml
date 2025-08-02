@@ -1,0 +1,13 @@
+[package]
+name = "bin"
+version = "0.0.0"
+edition = "2024"
+license = "MIT OR Apache-2.0"
+description = "bin"
+
+[lib]
+path = "lib.rs"
+
+[dependencies]
+sol.path = "../sol"
+toy.path = "../toy"
