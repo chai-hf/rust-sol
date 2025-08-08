@@ -81,13 +81,6 @@ impl Reader {
     }
 
     #[inline]
-    fn pop(&mut self) -> u8 {
-        let num = unsafe { *self.ptr }.wrapping_sub(b'0');
-        self.add(1);
-        num
-    }
-
-    #[inline]
     fn neg(&mut self) -> bool {
         if unsafe { *self.ptr } == b'-' {
             self.add(1);
@@ -114,6 +107,14 @@ impl Reader {
     #[inline]
     pub fn add(&mut self, count: usize) {
         self.ptr = unsafe { self.ptr.add(count) }
+    }
+
+    #[inline]
+    /// Reads a char and convert it to a number.
+    pub fn pop(&mut self) -> u8 {
+        let num = unsafe { *self.ptr }.wrapping_sub(b'0');
+        self.add(1);
+        num
     }
 
     /// Reads a number from 0 to 9.

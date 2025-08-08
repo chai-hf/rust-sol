@@ -47,7 +47,7 @@ pub fn gen_scripts(dir: &str, problem: &str, solution: &str) {
     let mut contents = format!(
         r#"use sol::{dir}::{problem}::{solution} as testfn;
 const DIR: &str = "{dir}";
-const PROBLEM: &str = "{solution}";
+const PROBLEM: &str = "{problem}";
 "#
     );
     for test in &tests {
@@ -195,7 +195,30 @@ use sol::{dir}::{problem}::{solution} as testfn;
     fs::write(&path, contents).unwrap();
 
     let mut contents = format!(
-        r#"cargo b -r -q --target x86_64-unknown-none --bin {solution}
+        r#"set -e
+cargo build --release --quiet --example {solution}
+"#
+    );
+    for test in &tests {
+        contents.push_str(&format!(
+            r#"printf {test}
+time -f ' %es %MKB' target/release/examples/{solution} \
+< problems/{dir}/{problem}/in/{test}.in \
+> problems/{dir}/{problem}/out/{test}.res
+problems/{dir}/{problem}/checker \
+problems/{dir}/{problem}/in/{test}.in \
+problems/{dir}/{problem}/out/{test}.res \
+problems/{dir}/{problem}/out/{test}.out
+rm problems/{dir}/{problem}/out/{test}.res
+"#
+        ));
+    }
+    let path = format!("../bench_{solution}.sh");
+    fs::write(&path, contents).unwrap();
+
+    let mut contents = format!(
+        r#"set -e
+cargo build --release --quiet --target x86_64-unknown-none --bin {solution}
 "#
     );
     for test in &tests {
@@ -220,6 +243,7 @@ pub fn rm_scripts(solution: &str) {
     fs::remove_file(format!("tests/{solution}.rs")).unwrap();
     fs::remove_file(format!("examples/{solution}.rs")).unwrap();
     fs::remove_file(format!("../bin/src/bin/{solution}.rs")).unwrap();
+    fs::remove_file(format!("../bench_{solution}.sh")).unwrap();
     fs::remove_file(format!("../judge_{solution}.sh")).unwrap();
     fs::remove_file(format!("../bundle_{solution}.c")).unwrap();
     fs::remove_file(format!("../check_{solution}.sh")).unwrap();
@@ -240,10 +264,10 @@ pub fn bundle(dir: &str, problem: &str, solution: &str) {
     tests.sort();
 
     let status = Command::new("cargo")
-        .arg("b")
+        .arg("build")
         .arg("--workspace")
-        .arg("-r")
-        .arg("-q")
+        .arg("--release")
+        .arg("--quiet")
         .arg("--target")
         .arg("x86_64-unknown-none")
         .arg("--bin")
