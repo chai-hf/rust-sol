@@ -1,0 +1,9 @@
+[workspace]
+members = ["sol", "toy", "util"]
+resolver = "3"
+
+[profile.release]
+lto = true
+strip = true
+panic = "abort"
+codegen-units = 1

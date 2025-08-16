@@ -1,0 +1,15 @@
+[package]
+name = "sol"
+version = "0.0.0"
+edition = "2024"
+license = "MIT OR Apache-2.0"
+description = "sol"
+
+[lib]
+path = "lib.rs"
+
+[dependencies]
+toy.path = "../toy"
+
+[dev-dependencies]
+util.path = "../util"
